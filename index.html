@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ALAT Visitor Access System</title>
+<style>
+  :root {
+    --navy: #1A3A6B;
+    --blue: #2E75B6;
+    --light-blue: #E8F1FB;
+    --gold: #C8A200;
+    --green: #0A7A4B;
+    --red: #C0392B;
+    --gray: #5A5A5A;
+    --light-gray: #F5F6FA;
+    --border: #D0D5E0;
+    --white: #FFFFFF;
+    --shadow: 0 2px 12px rgba(26,58,107,0.10);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; background: #EEF2F8; min-height: 100vh; }
+
+  /* ── Header ── */
+  .header {
+    background: var(--navy);
+    color: white;
+    padding: 0 32px;
+    height: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+    position: sticky; top: 0; z-index: 100;
+  }
+  .header-left { display: flex; align-items: center; gap: 14px; }
+  .logo-box {
+    width: 40px; height: 40px; background: var(--gold);
+    border-radius: 8px; display: flex; align-items: center; justify-content: center;
+    font-weight: 800; font-size: 16px; color: var(--navy); letter-spacing: 1px;
+  }
+  .header h1 { font-size: 18px; font-weight: 600; letter-spacing: 0.5px; }
+  .header-sub { font-size: 11px; opacity: 0.7; margin-top: 1px; }
+  .header-right { display: flex; align-items: center; gap: 16px; }
+  .time-display { font-size: 13px; opacity: 0.8; }
+  .badge-online { background: #27AE60; color: white; font-size: 11px; padding: 3px 10px; border-radius: 20px; font-weight: 600; }
+
+  /* ── Layout ── */
+  .app { display: flex; min-height: calc(100vh - 64px); }
+  .sidebar {
+    width: 220px; background: var(--navy); padding: 20px 0;
+    flex-shrink: 0; display: flex; flex-direction: column;
+  }
+  .sidebar-section { padding: 8px 16px 4px; font-size: 10px; color: rgba(255,255,255,0.4); text-transform: uppercase; letter-spacing: 1px; margin-top: 8px; }
+  .nav-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 20px; color: rgba(255,255,255,0.75); font-size: 13.5px;
+    cursor: pointer; transition: all 0.15s; border-left: 3px solid transparent; text-decoration: none;
+  }
+  .nav-item:hover { background: rgba(255,255,255,0.08); color: white; }
+  .nav-item.active { background: rgba(255,255,255,0.12); color: white; border-left-color: var(--gold); font-weight: 600; }
+  .nav-icon { width: 18px; text-align: center; font-size: 15px; }
+  .sidebar-footer { margin-top: auto; padding: 16px 20px; border-top: 1px solid rgba(255,255,255,0.1); }
+  .sidebar-footer-text { font-size: 11px; color: rgba(255,255,255,0.4); }
+
+  /* ── Main ── */
+  .main { flex: 1; padding: 28px 32px; overflow-y: auto; }
+
+  /* ── Page title ── */
+  .page-title { font-size: 22px; font-weight: 700; color: var(--navy); margin-bottom: 4px; }
+  .page-sub { font-size: 13px; color: var(--gray); margin-bottom: 24px; }
+
+  /* ── Stat cards ── */
+  .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 28px; }
+  .stat-card {
+    background: var(--white); border-radius: 12px; padding: 18px 20px;
+    box-shadow: var(--shadow); border-left: 4px solid var(--blue);
+  }
+  .stat-card.green { border-left-color: var(--green); }
+  .stat-card.gold { border-left-color: var(--gold); }
+  .stat-card.red { border-left-color: var(--red); }
+  .stat-label { font-size: 11px; color: var(--gray); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 6px; }
+  .stat-num { font-size: 28px; font-weight: 700; color: var(--navy); }
+  .stat-change { font-size: 11px; color: var(--green); margin-top: 4px; }
+
+  /* ── Cards ── */
+  .card { background: var(--white); border-radius: 12px; box-shadow: var(--shadow); margin-bottom: 24px; }
+  .card-header {
+    padding: 16px 24px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .card-title { font-size: 15px; font-weight: 700; color: var(--navy); }
+  .card-body { padding: 24px; }
+
+  /* ── Form ── */
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .form-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+  .form-group { display: flex; flex-direction: column; gap: 6px; }
+  .form-group.full { grid-column: 1 / -1; }
+  label { font-size: 12px; font-weight: 600; color: var(--navy); text-transform: uppercase; letter-spacing: 0.6px; }
+  input, select, textarea {
+    padding: 10px 14px; border: 1.5px solid var(--border); border-radius: 8px;
+    font-size: 14px; color: #222; background: white; transition: border-color 0.15s;
+    font-family: inherit;
+  }
+  input:focus, select:focus, textarea:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px rgba(46,117,182,0.12); }
+  textarea { resize: vertical; min-height: 72px; }
+  .required { color: var(--red); margin-left: 2px; }
+
+  /* ── Buttons ── */
+  .btn { padding: 10px 22px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; border: none; transition: all 0.15s; display: inline-flex; align-items: center; gap: 8px; }
+  .btn-primary { background: var(--navy); color: white; }
+  .btn-primary:hover { background: #122d55; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(26,58,107,0.25); }
+  .btn-success { background: var(--green); color: white; }
+  .btn-success:hover { background: #085c39; }
+  .btn-outline { background: white; color: var(--navy); border: 1.5px solid var(--navy); }
+  .btn-outline:hover { background: var(--light-blue); }
+  .btn-danger { background: var(--red); color: white; }
+  .btn-sm { padding: 6px 14px; font-size: 12px; }
+  .btn-group { display: flex; gap: 10px; margin-top: 20px; }
+
+  /* ── Table ── */
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  th { background: var(--light-gray); color: var(--navy); font-weight: 700; padding: 11px 14px; text-align: left; font-size: 12px; text-transform: uppercase; letter-spacing: 0.6px; border-bottom: 2px solid var(--border); }
+  td { padding: 12px 14px; border-bottom: 1px solid #EEF0F5; color: #333; }
+  tr:hover td { background: var(--light-blue); }
+
+  /* ── Status badges ── */
+  .badge { padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 700; letter-spacing: 0.5px; }
+  .badge-pending { background: #FFF3CD; color: #856404; }
+  .badge-approved { background: #D4EDDA; color: #155724; }
+  .badge-inside { background: #CCE5FF; color: #004085; }
+  .badge-checked-out { background: #F8F9FA; color: #6c757d; border: 1px solid #dee2e6; }
+  .badge-denied { background: #F8D7DA; color: #721c24; }
+
+  /* ── Pass / Badge ── */
+  .visitor-pass {
+    border: 2px solid var(--navy); border-radius: 12px; padding: 20px 24px;
+    max-width: 380px; background: linear-gradient(135deg, #f8faff 0%, #e8f1fb 100%);
+    position: relative; overflow: hidden;
+  }
+  .visitor-pass::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 8px;
+    background: var(--navy);
+  }
+  .pass-header { display: flex; justify-content: space-between; align-items: flex-start; margin-top: 8px; margin-bottom: 16px; }
+  .pass-logo { font-size: 20px; font-weight: 800; color: var(--navy); }
+  .pass-type { background: var(--gold); color: var(--navy); font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 4px; }
+  .pass-name { font-size: 22px; font-weight: 700; color: var(--navy); margin-bottom: 4px; }
+  .pass-company { font-size: 13px; color: var(--gray); margin-bottom: 14px; }
+  .pass-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 12px; }
+  .pass-field label { color: var(--gray); font-weight: 600; display: block; }
+  .pass-field span { color: var(--navy); font-weight: 600; }
+  .pass-qr {
+    width: 64px; height: 64px; background: var(--navy);
+    border-radius: 6px; display: flex; align-items: center; justify-content: center;
+    color: white; font-size: 10px; font-weight: 700; text-align: center; line-height: 1.3;
+    margin-top: 12px; float: right;
+  }
+  .pass-valid { font-size: 11px; color: var(--green); font-weight: 600; margin-top: 12px; }
+
+  /* ── Alert ── */
+  .alert { padding: 12px 18px; border-radius: 8px; font-size: 13px; font-weight: 500; margin-bottom: 16px; display: flex; align-items: center; gap: 10px; }
+  .alert-success { background: #D4EDDA; color: #155724; border-left: 4px solid #28a745; }
+  .alert-info { background: #CCE5FF; color: #004085; border-left: 4px solid #007bff; }
+  .alert-warning { background: #FFF3CD; color: #856404; border-left: 4px solid #ffc107; }
+  .hidden { display: none; }
+
+  /* ── Search bar ── */
+  .search-bar { display: flex; gap: 10px; margin-bottom: 16px; align-items: center; }
+  .search-bar input { flex: 1; }
+  .filter-select { width: 160px; }
+
+  /* ── Tab nav ── */
+  .tabs { display: flex; border-bottom: 2px solid var(--border); margin-bottom: 24px; gap: 0; }
+  .tab { padding: 10px 22px; font-size: 14px; font-weight: 600; color: var(--gray); cursor: pointer; border-bottom: 3px solid transparent; margin-bottom: -2px; transition: all 0.15s; }
+  .tab:hover { color: var(--navy); }
+  .tab.active { color: var(--navy); border-bottom-color: var(--blue); }
+
+  /* ── Pages ── */
+  .page { display: none; }
+  .page.active { display: block; }
+
+  /* ── Responsive tweaks ── */
+  @media (max-width: 900px) {
+    .stats-grid { grid-template-columns: 1fr 1fr; }
+    .form-grid { grid-template-columns: 1fr; }
+    .form-grid-3 { grid-template-columns: 1fr; }
+    .sidebar { width: 60px; }
+    .nav-item span { display: none; }
+    .sidebar-section { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-left">
+    <div class="logo-box">ALAT</div>
+    <div>
+      <div class="header h1" style="color:white;font-size:17px;font-weight:700;">ALAT Visitor Access System</div>
+      <div class="header-sub">Advanced Technology Company — Security & Facilities Management</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <span class="time-display" id="clock">--:-- --</span>
+    <span class="badge-online">● LIVE</span>
+  </div>
+</div>
+
+<div class="app">
+  <!-- SIDEBAR -->
+  <nav class="sidebar">
+    <div class="sidebar-section">Main</div>
+    <a class="nav-item active" onclick="showPage('dashboard')">
+      <span class="nav-icon">📊</span><span>Dashboard</span>
+    </a>
+    <a class="nav-item" onclick="showPage('register')">
+      <span class="nav-icon">✍️</span><span>Register Visitor</span>
+    </a>
+    <a class="nav-item" onclick="showPage('visitors')">
+      <span class="nav-icon">👥</span><span>Visitor Log</span>
+    </a>
+    <a class="nav-item" onclick="showPage('pass')">
+      <span class="nav-icon">🪪</span><span>Print Pass</span>
+    </a>
+    <div class="sidebar-section">Management</div>
+    <a class="nav-item" onclick="showPage('hosts')">
+      <span class="nav-icon">🏢</span><span>Host Directory</span>
+    </a>
+    <a class="nav-item" onclick="showPage('reports')">
+      <span class="nav-icon">📋</span><span>Reports</span>
+    </a>
+    <div class="sidebar-footer">
+      <div class="sidebar-footer-text">ALAT HQ · Riyadh, KSA</div>
+      <div class="sidebar-footer-text" style="margin-top:2px;">v1.0 · MIT Immersion</div>
+    </div>
+  </nav>
+
+  <!-- MAIN CONTENT -->
+  <main class="main">
+
+    <!-- DASHBOARD PAGE -->
+    <div id="page-dashboard" class="page active">
+      <div class="page-title">Dashboard</div>
+      <div class="page-sub">Real-time overview of visitor activity at ALAT Headquarters</div>
+
+      <div class="stats-grid">
+        <div class="stat-card green">
+          <div class="stat-label">Currently Inside</div>
+          <div class="stat-num" id="stat-inside">4</div>
+          <div class="stat-change">↑ Active visitors</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Today's Visitors</div>
+          <div class="stat-num" id="stat-today">12</div>
+          <div class="stat-change">As of today</div>
+        </div>
+        <div class="stat-card gold">
+          <div class="stat-label">Pending Approval</div>
+          <div class="stat-num" id="stat-pending">2</div>
+          <div class="stat-change">Awaiting host</div>
+        </div>
+        <div class="stat-card red">
+          <div class="stat-label">Total This Month</div>
+          <div class="stat-num">87</div>
+          <div class="stat-change">May 2025</div>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+        <!-- Recent activity -->
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Recent Check-ins</span>
+            <button class="btn btn-outline btn-sm" onclick="showPage('visitors')">View All</button>
+          </div>
+          <div class="card-body" style="padding:0;">
+            <table>
+              <thead><tr><th>Visitor</th><th>Host</th><th>Time</th><th>Status</th></tr></thead>
+              <tbody id="recent-table">
+                <tr><td><b>Ahmed Al-Rashid</b><br><span style="color:#888;font-size:11px;">SoftBank Group</span></td><td>Dr. Aldawood</td><td>09:14 AM</td><td><span class="badge badge-inside">Inside</span></td></tr>
+                <tr><td><b>Maria Santos</b><br><span style="color:#888;font-size:11px;">Lenovo MEA</span></td><td>Eng. Al-Qahtani</td><td>10:02 AM</td><td><span class="badge badge-inside">Inside</span></td></tr>
+                <tr><td><b>James Okafor</b><br><span style="color:#888;font-size:11px;">PIF Strategy</span></td><td>Ms. Al-Harbi</td><td>11:30 AM</td><td><span class="badge badge-approved">Approved</span></td></tr>
+                <tr><td><b>Li Wei</b><br><span style="color:#888;font-size:11px;">Dahua Technology</span></td><td>Eng. Saleh</td><td>08:45 AM</td><td><span class="badge badge-checked-out">Checked Out</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Quick actions -->
+        <div>
+          <div class="card" style="margin-bottom:16px;">
+            <div class="card-header"><span class="card-title">Quick Actions</span></div>
+            <div class="card-body">
+              <div style="display:flex;flex-direction:column;gap:10px;">
+                <button class="btn btn-primary" onclick="showPage('register')">✍️ &nbsp;Register New Visitor</button>
+                <button class="btn btn-success" onclick="showPage('pass')">🪪 &nbsp;Print Visitor Pass</button>
+                <button class="btn btn-outline" onclick="showPage('visitors')">📋 &nbsp;View Full Visitor Log</button>
+              </div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header"><span class="card-title">Facility Status</span></div>
+            <div class="card-body">
+              <div style="display:flex;flex-direction:column;gap:10px;font-size:13px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #eee;">
+                  <span>Main Gate</span><span style="color:#0A7A4B;font-weight:700;">● Open</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #eee;">
+                  <span>Innovation Tower Lobby</span><span style="color:#0A7A4B;font-weight:700;">● Open</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #eee;">
+                  <span>Manufacturing Zone A</span><span style="color:#C8A200;font-weight:700;">● Restricted</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;">
+                  <span>Semiconductor Lab</span><span style="color:#C0392B;font-weight:700;">● Secure</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- REGISTER VISITOR PAGE -->
+    <div id="page-register" class="page">
+      <div class="page-title">Register Visitor</div>
+      <div class="page-sub">Complete all required fields to register a visitor and generate a pass</div>
+
+      <div id="reg-success" class="alert alert-success hidden">
+        ✅ Visitor registered successfully! Visitor pass has been generated.
+      </div>
+
+      <div class="card">
+        <div class="card-header"><span class="card-title">Visitor Information</span></div>
+        <div class="card-body">
+          <div class="form-grid">
+            <div class="form-group">
+              <label>First Name <span class="required">*</span></label>
+              <input type="text" id="v-fname" placeholder="e.g. Ahmed">
+            </div>
+            <div class="form-group">
+              <label>Last Name <span class="required">*</span></label>
+              <input type="text" id="v-lname" placeholder="e.g. Al-Rashid">
+            </div>
+            <div class="form-group">
+              <label>Company / Organization <span class="required">*</span></label>
+              <input type="text" id="v-company" placeholder="e.g. Lenovo MEA">
+            </div>
+            <div class="form-group">
+              <label>Job Title</label>
+              <input type="text" id="v-title" placeholder="e.g. Business Development Manager">
+            </div>
+            <div class="form-group">
+              <label>Email Address <span class="required">*</span></label>
+              <input type="email" id="v-email" placeholder="visitor@company.com">
+            </div>
+            <div class="form-group">
+              <label>Phone Number</label>
+              <input type="tel" id="v-phone" placeholder="+966 5X XXX XXXX">
+            </div>
+            <div class="form-group">
+              <label>ID / Passport Number <span class="required">*</span></label>
+              <input type="text" id="v-id" placeholder="e.g. A12345678">
+            </div>
+            <div class="form-group">
+              <label>Nationality</label>
+              <select id="v-nationality">
+                <option value="">Select country</option>
+                <option>Saudi Arabia</option>
+                <option>Japan</option>
+                <option>China</option>
+                <option>United States</option>
+                <option>United Kingdom</option>
+                <option>Germany</option>
+                <option>India</option>
+                <option>Philippines</option>
+                <option>Egypt</option>
+                <option>Other</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><span class="card-title">Visit Details</span></div>
+        <div class="card-body">
+          <div class="form-grid">
+            <div class="form-group">
+              <label>ALAT Host Name <span class="required">*</span></label>
+              <select id="v-host">
+                <option value="">Select Host</option>
+                <option>Dr. Muhammad Nasser Aldawood (CEO)</option>
+                <option>Eng. Khalid Al-Qahtani (Operations)</option>
+                <option>Ms. Reem Al-Harbi (HR Director)</option>
+                <option>Eng. Omar Saleh (Manufacturing)</option>
+                <option>Dr. Fatima Al-Dosari (R&D)</option>
+                <option>Mr. Faisal Al-Ghamdi (Partnerships)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Visit Purpose <span class="required">*</span></label>
+              <select id="v-purpose">
+                <option value="">Select purpose</option>
+                <option>Business Meeting</option>
+                <option>Partnership Discussion</option>
+                <option>Facility Tour</option>
+                <option>Technical Consultation</option>
+                <option>Interview</option>
+                <option>Delivery</option>
+                <option>Maintenance</option>
+                <option>Other</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Visit Date <span class="required">*</span></label>
+              <input type="date" id="v-date">
+            </div>
+            <div class="form-group">
+              <label>Expected Check-in Time</label>
+              <input type="time" id="v-time">
+            </div>
+            <div class="form-group">
+              <label>Area / Department to Visit</label>
+              <select id="v-area">
+                <option value="">Select area</option>
+                <option>Executive Suite (Floor 40)</option>
+                <option>Innovation Center</option>
+                <option>Semiconductors Division</option>
+                <option>Smart Devices Division</option>
+                <option>Manufacturing Floor A</option>
+                <option>HR & Training Academy</option>
+                <option>Conference Rooms</option>
+                <option>Main Lobby / Reception</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Access Level</label>
+              <select id="v-access">
+                <option>General Access</option>
+                <option>Escorted – Restricted Areas</option>
+                <option>Full Access (CEO Approved)</option>
+              </select>
+            </div>
+            <div class="form-group full">
+              <label>Notes / Special Requirements</label>
+              <textarea id="v-notes" placeholder="Any special instructions, equipment brought, NDA signed, etc."></textarea>
+            </div>
+          </div>
+          <div class="btn-group">
+            <button class="btn btn-primary" onclick="registerVisitor()">✅ Register & Generate Pass</button>
+            <button class="btn btn-outline" onclick="clearForm()">Clear Form</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- VISITOR LOG PAGE -->
+    <div id="page-visitors" class="page">
+      <div class="page-title">Visitor Log</div>
+      <div class="page-sub">All registered visitors — search, filter and manage access</div>
+
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">All Visitors</span>
+          <button class="btn btn-primary btn-sm" onclick="showPage('register')">+ New Visitor</button>
+        </div>
+        <div class="card-body">
+          <div class="search-bar">
+            <input type="text" placeholder="🔍  Search by name, company or host..." id="search-input" oninput="filterTable()">
+            <select class="filter-select" id="filter-status" onchange="filterTable()">
+              <option value="">All Statuses</option>
+              <option value="Inside">Inside</option>
+              <option value="Approved">Approved</option>
+              <option value="Pending">Pending</option>
+              <option value="Checked Out">Checked Out</option>
+              <option value="Denied">Denied</option>
+            </select>
+          </div>
+          <div class="table-wrap">
+            <table id="visitor-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Visitor Name</th>
+                  <th>Company</th>
+                  <th>Host</th>
+                  <th>Purpose</th>
+                  <th>Check-in</th>
+                  <th>Check-out</th>
+                  <th>Status</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="visitor-tbody">
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PRINT PASS PAGE -->
+    <div id="page-pass" class="page">
+      <div class="page-title">Visitor Pass</div>
+      <div class="page-sub">Generate and print visitor access passes</div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:start;">
+        <div class="card">
+          <div class="card-header"><span class="card-title">Select Visitor</span></div>
+          <div class="card-body">
+            <div class="form-group" style="margin-bottom:16px;">
+              <label>Visitor Name</label>
+              <select id="pass-select" onchange="updatePass()">
+                <option value="">-- Select Visitor --</option>
+                <option value="0">Ahmed Al-Rashid (SoftBank Group)</option>
+                <option value="1">Maria Santos (Lenovo MEA)</option>
+                <option value="2">James Okafor (PIF Strategy)</option>
+                <option value="3">Li Wei (Dahua Technology)</option>
+              </select>
+            </div>
+            <div class="alert alert-info" id="pass-info">
+              Select a registered visitor above to generate their pass.
+            </div>
+            <div class="btn-group" style="margin-top:12px;">
+              <button class="btn btn-primary" onclick="printPass()">🖨️ Print Pass</button>
+              <button class="btn btn-outline" onclick="showPage('register')">+ Register New</button>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="visitor-pass" id="visitor-pass-card">
+            <div class="pass-header">
+              <div>
+                <div class="pass-logo">ALAT</div>
+                <div style="font-size:10px;color:#888;margin-top:2px;">Advanced Technology</div>
+              </div>
+              <div class="pass-type" id="pass-type-label">VISITOR PASS</div>
+            </div>
+            <div class="pass-name" id="pass-name">Select a visitor</div>
+            <div class="pass-company" id="pass-company">—</div>
+            <div class="pass-qr" id="pass-qr">QR<br>CODE<br>VAT-0000</div>
+            <div class="pass-grid">
+              <div class="pass-field"><label>Host</label><span id="pass-host">—</span></div>
+              <div class="pass-field"><label>Area</label><span id="pass-area">—</span></div>
+              <div class="pass-field"><label>Date</label><span id="pass-date">—</span></div>
+              <div class="pass-field"><label>Access</label><span id="pass-access">—</span></div>
+            </div>
+            <div class="pass-valid" id="pass-valid">⬤ Awaiting visitor selection</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- HOST DIRECTORY PAGE -->
+    <div id="page-hosts" class="page">
+      <div class="page-title">Host Directory</div>
+      <div class="page-sub">ALAT department heads and their contact details</div>
+      <div class="card">
+        <div class="card-body" style="padding:0;">
+          <table>
+            <thead><tr><th>Name</th><th>Department</th><th>Floor / Location</th><th>Phone</th><th>Status</th></tr></thead>
+            <tbody>
+              <tr><td><b>Dr. Muhammad Nasser Aldawood</b><br><span style="color:#888;font-size:11px;">Acting CEO</span></td><td>Executive Office</td><td>Floor 40 – Executive Suite</td><td>+966 9200 00247</td><td><span class="badge badge-inside">Available</span></td></tr>
+              <tr><td><b>Eng. Khalid Al-Qahtani</b><br><span style="color:#888;font-size:11px;">VP Operations</span></td><td>Manufacturing & Ops</td><td>Floor 12 – Operations Hub</td><td>Ext. 2201</td><td><span class="badge badge-inside">Available</span></td></tr>
+              <tr><td><b>Ms. Reem Al-Harbi</b><br><span style="color:#888;font-size:11px;">HR Director</span></td><td>Human Resources</td><td>Floor 8 – HR Academy</td><td>Ext. 1801</td><td><span class="badge badge-approved">In Meeting</span></td></tr>
+              <tr><td><b>Eng. Omar Saleh</b><br><span style="color:#888;font-size:11px;">Manufacturing Lead</span></td><td>Smart Devices</td><td>Factory Floor A</td><td>Ext. 3301</td><td><span class="badge badge-inside">Available</span></td></tr>
+              <tr><td><b>Dr. Fatima Al-Dosari</b><br><span style="color:#888;font-size:11px;">Head of R&D</span></td><td>Innovation Center</td><td>Floor 22 – R&D Labs</td><td>Ext. 2201</td><td><span class="badge badge-pending">Off-site</span></td></tr>
+              <tr><td><b>Mr. Faisal Al-Ghamdi</b><br><span style="color:#888;font-size:11px;">Partnerships Director</span></td><td>Business Development</td><td>Floor 35 – BD Suite</td><td>Ext. 3501</td><td><span class="badge badge-inside">Available</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- REPORTS PAGE -->
+    <div id="page-reports" class="page">
+      <div class="page-title">Reports & Analytics</div>
+      <div class="page-sub">Visitor statistics and access reports</div>
+
+      <div class="stats-grid">
+        <div class="stat-card green"><div class="stat-label">Total Visitors (2025)</div><div class="stat-num">312</div></div>
+        <div class="stat-card"><div class="stat-label">Avg. Daily Visitors</div><div class="stat-num">14.2</div></div>
+        <div class="stat-card gold"><div class="stat-label">Avg. Visit Duration</div><div class="stat-num">2.4h</div></div>
+        <div class="stat-card red"><div class="stat-label">Security Incidents</div><div class="stat-num">0</div></div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+        <div class="card">
+          <div class="card-header"><span class="card-title">Visitors by Purpose</span></div>
+          <div class="card-body">
+            <div style="display:flex;flex-direction:column;gap:10px;">
+              <div style="font-size:13px;">
+                <div style="display:flex;justify-content:space-between;margin-bottom:4px;"><span>Business Meeting</span><span>38%</span></div>
+                <div style="background:#eee;border-radius:4px;height:8px;"><div style="background:var(--navy);width:38%;height:8px;border-radius:4px;"></div></div>
+              </div>
+              <div style="font-size:13px;">
+                <div style="display:flex;justify-content:space-between;margin-bottom:4px;"><span>Partnership Discussion</span><span>27%</span></div>
+                <div style="background:#eee;border-radius:4px;height:8px;"><div style="background:var(--blue);width:27%;height:8px;border-radius:4px;"></div></div>
+              </div>
+              <div style="font-size:13px;">
+                <div style="display:flex;justify-content:space-between;margin-bottom:4px;"><span>Facility Tour</span><span>18%</span></div>
+                <div style="background:#eee;border-radius:4px;height:8px;"><div style="background:var(--gold);width:18%;height:8px;border-radius:4px;"></div></div>
+              </div>
+              <div style="font-size:13px;">
+                <div style="display:flex;justify-content:space-between;margin-bottom:4px;"><span>Technical Consultation</span><span>12%</span></div>
+                <div style="background:#eee;border-radius:4px;height:8px;"><div style="background:var(--green);width:12%;height:8px;border-radius:4px;"></div></div>
+              </div>
+              <div style="font-size:13px;">
+                <div style="display:flex;justify-content:space-between;margin-bottom:4px;"><span>Other</span><span>5%</span></div>
+                <div style="background:#eee;border-radius:4px;height:8px;"><div style="background:#aaa;width:5%;height:8px;border-radius:4px;"></div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header"><span class="card-title">Top Visitor Companies</span></div>
+          <div class="card-body" style="padding:0;">
+            <table>
+              <thead><tr><th>Company</th><th>Visits</th><th>Trend</th></tr></thead>
+              <tbody>
+                <tr><td>Lenovo MEA</td><td>42</td><td style="color:var(--green)">↑ +12</td></tr>
+                <tr><td>SoftBank Group</td><td>31</td><td style="color:var(--green)">↑ +8</td></tr>
+                <tr><td>PIF (Internal)</td><td>28</td><td style="color:var(--gray)">→ 0</td></tr>
+                <tr><td>Dahua Technology</td><td>19</td><td style="color:var(--green)">↑ +4</td></tr>
+                <tr><td>TK Elevator</td><td>14</td><td style="color:var(--green)">↑ +14</td></tr>
+                <tr><td>Carrier Global</td><td>11</td><td style="color:var(--red)">↓ -2</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+const visitorsData = [
+  { id:"VAT-001", name:"Ahmed Al-Rashid", company:"SoftBank Group", host:"Dr. Aldawood", purpose:"Business Meeting", checkin:"09:14 AM", checkout:"—", status:"Inside", area:"Executive Suite" },
+  { id:"VAT-002", name:"Maria Santos", company:"Lenovo MEA", host:"Eng. Al-Qahtani", purpose:"Partnership Discussion", checkin:"10:02 AM", checkout:"—", status:"Inside", area:"Manufacturing Floor A" },
+  { id:"VAT-003", name:"James Okafor", company:"PIF Strategy", host:"Ms. Al-Harbi", purpose:"Business Meeting", checkin:"11:30 AM", checkout:"—", status:"Approved", area:"Conference Rooms" },
+  { id:"VAT-004", name:"Li Wei", company:"Dahua Technology", host:"Eng. Saleh", purpose:"Technical Consultation", checkin:"08:45 AM", checkout:"11:20 AM", status:"Checked Out", area:"Smart Devices Division" },
+  { id:"VAT-005", name:"Rania Al-Mutairi", company:"KACST", host:"Dr. Al-Dosari", purpose:"Facility Tour", checkin:"02:00 PM", checkout:"—", status:"Pending", area:"Innovation Center" },
+  { id:"VAT-006", name:"Carlos Mendez", company:"TK Elevator", host:"Mr. Al-Ghamdi", purpose:"Partnership Discussion", checkin:"—", checkout:"—", status:"Pending", area:"BD Suite" },
+  { id:"VAT-007", name:"Yuki Tanaka", company:"SoftBank Group", host:"Dr. Aldawood", purpose:"Business Meeting", checkin:"07:50 AM", checkout:"09:30 AM", status:"Checked Out", area:"Executive Suite" },
+];
+
+const passData = [
+  { name:"Ahmed Al-Rashid", company:"SoftBank Group", host:"Dr. Aldawood", area:"Executive Suite", date:"03 May 2025", access:"General Access", id:"VAT-001" },
+  { name:"Maria Santos", company:"Lenovo MEA", host:"Eng. Al-Qahtani", area:"Manufacturing A", date:"03 May 2025", access:"Escorted – Restricted", id:"VAT-002" },
+  { name:"James Okafor", company:"PIF Strategy", host:"Ms. Al-Harbi", area:"Conference Rooms", date:"03 May 2025", access:"General Access", id:"VAT-003" },
+  { name:"Li Wei", company:"Dahua Technology", host:"Eng. Saleh", area:"Smart Devices", date:"03 May 2025", access:"Escorted – Restricted", id:"VAT-004" },
+];
+
+function statusBadge(s) {
+  const map = { "Inside":"badge-inside","Approved":"badge-approved","Pending":"badge-pending","Checked Out":"badge-checked-out","Denied":"badge-denied" };
+  return `<span class="badge ${map[s]||''}">${s}</span>`;
+}
+
+function renderVisitorTable(data) {
+  const tbody = document.getElementById('visitor-tbody');
+  tbody.innerHTML = data.map((v,i) => `
+    <tr>
+      <td style="color:#aaa;font-size:11px;">${v.id}</td>
+      <td><b>${v.name}</b></td>
+      <td>${v.company}</td>
+      <td>${v.host}</td>
+      <td>${v.purpose}</td>
+      <td>${v.checkin}</td>
+      <td>${v.checkout}</td>
+      <td>${statusBadge(v.status)}</td>
+      <td>
+        ${v.status==='Pending'?`<button class="btn btn-success btn-sm" onclick="approveVisitor(${i})">Approve</button>`:''}
+        ${v.status==='Inside'?`<button class="btn btn-outline btn-sm" onclick="checkoutVisitor(${i})">Check Out</button>`:''}
+      </td>
+    </tr>`).join('');
+}
+
+function filterTable() {
+  const q = document.getElementById('search-input').value.toLowerCase();
+  const s = document.getElementById('filter-status').value;
+  const filtered = visitorsData.filter(v =>
+    (!q || v.name.toLowerCase().includes(q) || v.company.toLowerCase().includes(q) || v.host.toLowerCase().includes(q)) &&
+    (!s || v.status === s)
+  );
+  renderVisitorTable(filtered);
+}
+
+function approveVisitor(i) {
+  visitorsData[i].status = 'Approved';
+  visitorsData[i].checkin = new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
+  renderVisitorTable(visitorsData);
+  updateStats();
+}
+
+function checkoutVisitor(i) {
+  visitorsData[i].status = 'Checked Out';
+  visitorsData[i].checkout = new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
+  renderVisitorTable(visitorsData);
+  updateStats();
+}
+
+function updateStats() {
+  document.getElementById('stat-inside').textContent = visitorsData.filter(v=>v.status==='Inside').length;
+  document.getElementById('stat-today').textContent = visitorsData.length;
+  document.getElementById('stat-pending').textContent = visitorsData.filter(v=>v.status==='Pending').length;
+}
+
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  event && event.target && event.target.closest('.nav-item') && event.target.closest('.nav-item').classList.add('active');
+  if(id==='visitors') renderVisitorTable(visitorsData);
+}
+
+function registerVisitor() {
+  const fname = document.getElementById('v-fname').value;
+  const lname = document.getElementById('v-lname').value;
+  const company = document.getElementById('v-company').value;
+  const email = document.getElementById('v-email').value;
+  const host = document.getElementById('v-host').value;
+  const purpose = document.getElementById('v-purpose').value;
+  if(!fname||!lname||!company||!email||!host||!purpose) {
+    alert('Please fill in all required fields.'); return;
+  }
+  const newId = 'VAT-' + String(visitorsData.length+1).padStart(3,'0');
+  visitorsData.push({
+    id:newId, name:`${fname} ${lname}`, company,
+    host: host.split(' (')[0],
+    purpose, checkin:'—', checkout:'—', status:'Approved',
+    area: document.getElementById('v-area').value||'Main Lobby'
+  });
+  updateStats();
+  document.getElementById('reg-success').classList.remove('hidden');
+  setTimeout(()=>document.getElementById('reg-success').classList.add('hidden'),4000);
+  clearForm();
+}
+
+function clearForm() {
+  ['v-fname','v-lname','v-company','v-title','v-email','v-phone','v-id','v-notes'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.value='';
+  });
+  ['v-nationality','v-host','v-purpose','v-area','v-access'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.selectedIndex=0;
+  });
+}
+
+function updatePass() {
+  const sel = document.getElementById('pass-select');
+  const idx = sel.value;
+  if(idx==='') return;
+  const p = passData[parseInt(idx)];
+  document.getElementById('pass-name').textContent = p.name;
+  document.getElementById('pass-company').textContent = p.company;
+  document.getElementById('pass-host').textContent = p.host;
+  document.getElementById('pass-area').textContent = p.area;
+  document.getElementById('pass-date').textContent = p.date;
+  document.getElementById('pass-access').textContent = p.access;
+  document.getElementById('pass-qr').innerHTML = `QR<br>CODE<br>${p.id}`;
+  document.getElementById('pass-valid').textContent = '⬤ Valid – ' + p.date;
+  document.getElementById('pass-valid').style.color = '#0A7A4B';
+  document.getElementById('pass-info').textContent = `Pass ready for ${p.name} — click Print Pass to print.`;
+}
+
+function printPass() {
+  const idx = document.getElementById('pass-select').value;
+  if(idx==='') { alert('Please select a visitor first.'); return; }
+  window.print();
+}
+
+function updateClock() {
+  const now = new Date();
+  document.getElementById('clock').textContent = now.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// Set today's date as default
+document.getElementById('v-date').valueAsDate = new Date();
+
+renderVisitorTable(visitorsData);
+updateStats();
+</script>
+</body>
+</html>
